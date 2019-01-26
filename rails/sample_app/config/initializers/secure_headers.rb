@@ -5,7 +5,7 @@ SecureHeaders::Configuration.default do |config|
   config.csp_report_only = {
     default_src: %w('self'),
     img_src: ["'self'", gravatar],
-    script_src: %w('self'),
+    script_src: %w('self' https: 'unsafe-inline'),
     report_uri: [report_uri],
   }
   config.csp = SecureHeaders::OPT_OUT
