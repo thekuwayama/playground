@@ -162,7 +162,7 @@ check_and_puts(derive_secret(secret: secret, label: label, messages: messages, l
 
 # implements derive_secret with openssl
 def derive_secret_with_openssl(salt:, ikm:, label:, messages:, length:, digest:)
-  secret = hkdf_extract(digest: digest, salt: salt, ikm: ikm)
+  # secret = hkdf_extract(digest: digest, salt: salt, ikm: ikm)
   # puts secret.bytes.map { |x| format("%02x", x) }.join(' ')
   transcript_hash = OpenSSL::Digest.digest(digest, messages)
   hkdf_expand_label_with_openssl(salt: salt, ikm: ikm, label: label, context: transcript_hash, length: length, digest: digest)
