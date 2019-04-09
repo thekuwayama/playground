@@ -10,7 +10,7 @@ store.set_default_paths
 # get certificate from stdin
 cert = OpenSSL::X509::Certificate.new(STDIN.read)
 
-san = cert.extensions.select { |ex| ex.oid == 'subjectAltName' }.first&.value
+san = cert.extensions.find { |ex| ex.oid == 'subjectAltName' }&.value
 p san.split(',').map { |uri| uri.gsub(/\s*DNS:/, '').gsub('.', '\.').gsub('*', '.*') }
      .any? { |uri|  ARGV[0].match(/#{uri}/) } unless san.nil?
 
