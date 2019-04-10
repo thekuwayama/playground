@@ -10,8 +10,10 @@ store.set_default_paths
 # get certificate from stdin
 cert = OpenSSL::X509::Certificate.new(STDIN.read)
 
-san = cert.extensions.find { |ex| ex.oid == 'subjectAltName' }&.value
-p san.split(',').map { |uri| uri.gsub(/\s*DNS:/, '').gsub('.', '\.').gsub('*', '.*') }
-     .any? { |uri|  ARGV[0].match(/#{uri}/) } unless san.nil?
+san = cert.extensions.find { |ex| ex.oid == 'subjectAltName' }
+ostr = OpenSSL::ASN1.decode(san.to_der).value.last
+p OpenSSL::ASN1.decode(ostr.value).map(&:value)
+               .map { |uri| uri.gsub('.', '\.').gsub('*', '.*') }
+               .any? { |uri|  ARGV[0].match(/#{uri}/) } unless san.nil?
 
 # echo | openssl s_client -connect localhost:443 -showcerts 2>/dev/null | openssl x509 -outform PEM | ruby sample_check_san_certificate.rb localhost
