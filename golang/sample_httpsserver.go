@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 )
 
 const (
@@ -12,6 +13,7 @@ const (
 )
 
 func main() {
+	os.Setenv("GODEBUG", os.Getenv("GODEBUG")+",tls13=1")
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "Hello, TLS!\n")
 	})
