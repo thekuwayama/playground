@@ -11,3 +11,5 @@ rsa.set_key(MODULUS, PUBLIC_EXPONENT, nil)# PRIVATE_EXPONENT)
 
 rsa.set_factors(PRIME1, PRIME2)
 puts rsa.private_encrypt('plaintext') if rsa.private?
+
+# https://bugs.ruby-lang.org/issues/15841
