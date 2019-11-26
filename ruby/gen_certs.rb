@@ -38,4 +38,18 @@ end
   `openssl x509 -req -in #{CSR} -days 3650 -sha#{hs} -CA #{CA_CRT} -CAkey #{CA_KEY} -extensions v3_ext -extfile #{EXTFILE} -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:#{hs / 8} -set_serial #{OpenSSL::BN.rand(64).to_i} > #{server_crt}`
 end
 
+extfile = <<BIN
+[ v3_ext ]
+basicConstraints=CA:FALSE
+extendedKeyUsage=OCSPSigning
+subjectAltName=DNS:test-ocsp
+BIN
+File.write(EXTFILE, extfile)
+
+ocsp_key = TMP_DIR + '/rsa_rsa_ocsp.key'
+ocsp_crt = TMP_DIR + '/rsa_rsa_ocsp.crt'
+`openssl genrsa 2048 > #{ocsp_key}`
+`openssl req -new -sha256 -key #{ocsp_key} -subj "/CN=test-ocsp" > #{CSR}`
+`openssl x509 -req -in #{CSR} -days 3650 -sha256 -CA #{CA_CRT} -CAkey #{CA_KEY} -extensions v3_ext -extfile #{EXTFILE} -set_serial #{OpenSSL::BN.rand(64).to_i} > #{ocsp_crt}`
+
 # openssl x509 -in tmp/$CRT -noout -text
