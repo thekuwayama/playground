@@ -12,6 +12,20 @@ Dir.glob(__dir__ + '/tmp/*_server.crt').each do |fp|
   # pp OpenSSL::ASN1.decode(spki.to_der)
 
   # NOTE:
+  #      PublicKeyAndChallenge ::= SEQUENCE {
+  #        spki SubjectPublicKeyInfo,
+  #        challenge IA5STRING
+  #      }
+  #
+  #      SignedPublicKeyAndChallenge ::= SEQUENCE {
+  #        publicKeyAndChallenge PublicKeyAndChallenge,
+  #        signatureAlgorithm AlgorithmIdentifier,
+  #        signature BIT STRING
+  #      }
+  #
+  # https://docs.ruby-lang.org/en/master/OpenSSL/Netscape/SPKI.html
+
+  # NOTE:
   #      SubjectPublicKeyInfo  ::=  SEQUENCE  {
   #        algorithm         AlgorithmIdentifier,
   #        subjectPublicKey  BIT STRING
@@ -35,9 +49,11 @@ Dir.glob(__dir__ + '/tmp/*_server.crt').each do |fp|
   #      }
   #
   # https://tools.ietf.org/html/rfc5480#appendix-A
-  puts OpenSSL::ASN1.decode(spki.to_der).value
-                    .first.value
-                    .first.value
-                    .first.value
-                    .first.value
+
+  puts OpenSSL::ASN1.decode(spki.to_der)  # SignedPublicKeyAndChallenge
+                    .value.first          # SignedPublicKeyAndChallenge[:publicKeyAndChallenge]
+                    .value.first          # PublicKeyAndChallenge[:spki]
+                    .value.first          # SubjectPublicKeyInfo[:algorithm]
+                    .value.first          # AlgorithmIdentifier[:algorithm]
+                    .value                # rsaEncryption
 end
