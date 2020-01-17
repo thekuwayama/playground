@@ -16,11 +16,12 @@ extfile = <<BIN
 basicConstraints=CA:FALSE
 keyUsage=digitalSignature, keyCertSign
 subjectAltName=DNS:localhost
+authorityInfoAccess=OCSP;URI:http://localhost/ocsp,caIssuers;URI:http://localhost/caIssuers
 BIN
 File.write(EXTFILE, extfile)
 
-# `openssl genrsa 2048 > #{CA_KEY}`
-# `openssl req -new -x509 -days 3650 -sha256 -key #{CA_KEY} -subj "/CN=test-ca" > #{CA_CRT}`
+`openssl genrsa 2048 > #{CA_KEY}`
+`openssl req -new -x509 -days 3650 -sha256 -key #{CA_KEY} -subj "/CN=test-ca" > #{CA_CRT}`
 
 ['prime256v1', 'secp384r1', 'secp521r1'].each do |curve|
   server_key = TMP_DIR + "/#{curve}_server.key"
