@@ -55,7 +55,7 @@ func indexHtmlHandler(wr http.ResponseWriter, _ *http.Request) {
 }
 
 var (
-	port     int
+	port int
 )
 
 func init() {
