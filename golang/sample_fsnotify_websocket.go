@@ -67,7 +67,17 @@ func getContent(fname string) (string, error) {
 	return string(data), nil
 }
 
-func indexHtmlHandler(wr http.ResponseWriter, _ *http.Request) {
+func generateIndexHandler(fname string) (func(http.ResponseWriter, *http.Request), error) {
+	_, err := os.Stat(fname)
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := getContent(fname)
+	if err != nil {
+		return nil, err
+	}
+
 	html := `
 <!DOCTYPE html>
 <html>
@@ -76,40 +86,24 @@ func indexHtmlHandler(wr http.ResponseWriter, _ *http.Request) {
     <title>minutes</title>
   </head>
   <body>
-    <pre id="minutes"></pre>
+    <pre><code id="minutes">%s</code></pre>
   </body>
 
-  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
   <script>
-    var co = $('#minutes')
-
-    $(document).ready(function(){
-      var s = $.get("initialcode", function(data) {
-        co.html($('<code>').text(data));
-      });
-    });
-
-    $(function() {
-      var ho = window.location.host;
-      var ws = new WebSocket("ws://" + ho + "/ws");
-      ws.onmessage = function(e) {
-        co.html($('<code>').text(event.data));
-        console.log("[RECEIVE]:" + event.data);
-      };
-    });
+    var ho = window.location.host;
+    var ws = new WebSocket("ws://" + ho + "/ws");
+    ws.onmessage = function(e) {
+      document.getElementById("minutes").textContent = e.data;
+      console.log("[RECEIVE]:" + e.data);
+    };
   </script>
 </html>
 `
-	fmt.Fprint(wr, html)
-}
-
-func initialCodeHandler(rw http.ResponseWriter, _ *http.Request) {
-	s, err := getContent(fileName)
-	if err != nil {
-		log.Fatal(err)
+	indexHandler := func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, fmt.Sprintf(html, s))
 	}
 
-	fmt.Fprint(rw, s)
+	return indexHandler, nil
 }
 
 var (
@@ -136,10 +130,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	indexHandler, err := generateIndexHandler(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	http.Handle("/ws", websocket.Handler(wsHandler))
-	http.Handle("/initialcode", http.HandlerFunc(initialCodeHandler))
-	http.Handle("/", http.HandlerFunc(indexHtmlHandler))
+	http.Handle("/", http.HandlerFunc(indexHandler))
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		log.Fatal(err)
