@@ -1,17 +1,53 @@
-use mini_redis::{client, Result};
+use mini_redis::{Connection, Frame};
+use tokio::net::{TcpListener, TcpStream};
 
 #[tokio::main]
-pub async fn main() -> Result<()> {
-    // mini-redis アドレスへのコネクションを開く
-    let mut client = client::connect("127.0.0.1:6379").await?;
+async fn main() {
+    // リスナーをこのアドレスにバインドする
+    let listener = TcpListener::bind("127.0.0.1:6379").await.unwrap();
 
-    // "hello" というキーに "world" という値をセット
-    client.set("hello", "world".into()).await?;
+    loop {
+        let (socket, _) = listener.accept().await.unwrap();
+        // それぞれのインバウンドソケットに対して新しいタスクを spawn する
+        // ソケットは新しいタスクに move され、そこで処理される
+        tokio::spawn(async move {
+            process(socket).await;
+        });
+    }
+}
 
-    // "hello" の値を取得
-    let result = client.get("hello").await?;
+async fn process(socket: TcpStream) {
+    use mini_redis::Command::{self, Get, Set};
+    use std::collections::HashMap;
 
-    println!("got value from the server; result={:?}", result);
+    // データを蓄えるため `HashMap` を使う
+    let mut db = HashMap::new();
 
-    Ok(())
+    // `mini-redis` が提供するコネクションによって、ソケットから来るフレームをパースする
+    let mut connection = Connection::new(socket);
+
+    // コネクションからコマンドを受け取るため `read_frame` を使う
+    while let Some(frame) = connection.read_frame().await.unwrap() {
+        let response = match Command::from_frame(frame).unwrap() {
+            Set(cmd) => {
+                // `Vec<u8> として保存する
+                db.insert(cmd.key().to_string(), cmd.value().to_vec());
+                Frame::Simple("OK".to_string())
+            }
+            Get(cmd) => {
+                if let Some(value) = db.get(cmd.key()) {
+                    // `Frame::Bulk` はデータが Bytes` 型であることを期待する
+                    // この型についてはのちほど解説する
+                    // とりあえずここでは `.into()` を使って `&Vec<u8>` から `Bytes` に変換する
+                    Frame::Bulk(value.clone().into())
+                } else {
+                    Frame::Null
+                }
+            }
+            cmd => panic!("unimplemented {:?}", cmd),
+        };
+
+        // クライアントへのレスポンスを書き込む
+        connection.write_frame(&response).await.unwrap();
+    }
 }
