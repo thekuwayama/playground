@@ -1,3 +1,5 @@
+#!/bin/sh
+
 docker run -d -p 5432:5432 --name postgres \
        -e POSTGRES_HOST_AUTH_METHOD=trust \
        -v "$(pwd)/server.crt:/var/lib/postgresql/server.crt:ro" \
