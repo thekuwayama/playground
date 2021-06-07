@@ -1,9 +1,9 @@
 #!/bin/sh
 
-docker run -d -p 5432:5432 --name postgres \
+docker run --rm -p 5432:5432 --name postgres \
        -e POSTGRES_HOST_AUTH_METHOD=trust \
        -v "$(pwd)/server.crt:/var/lib/postgresql/server.crt:ro" \
-       -v "$(pwd)/server.key:/var/lib/postgresql/server.key:ro" \
+       -v "$(pwd)/server.key:/var/lib/postgresql/server.key" \
        -v "$(pwd)/root.crt:/var/lib/postgresql/root.crt:ro" \
        postgres:12-alpine \
        -c ssl=on \
