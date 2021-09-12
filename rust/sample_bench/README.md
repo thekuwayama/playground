@@ -1,0 +1,5 @@
+### Usage
+
+```
+$ cargo +nightly bench
+```
