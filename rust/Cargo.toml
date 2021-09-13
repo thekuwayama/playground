@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "hello_world",
+    "send_echo_request",
+    "my-redis",
+    "sample_bench",
+    "async-await-echo",
+    "hyper_server",
+]
