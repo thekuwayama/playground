@@ -6,4 +6,5 @@ members = [
     "sample_bench",
     "async-await-echo",
     "hyper_server",
+    "matrix_image_converter.rs",
 ]
