@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/tcpproxy"
+	"inet.af/tcpproxy"
 )
 
 const (
-	CRT_PATH = "./fixtures/server.crt"
-	KEY_PATH = "./fixtures/server.key"
+	CRT_PATH = "../../fixtures/server.crt"
+	KEY_PATH = "../../fixtures/server.key"
 )
 
 func serveAndRoute(s string) {
@@ -33,5 +33,5 @@ func main() {
 	serveAndRoute("TEST")
 }
 
-// $ curl -i --cacert ./fixtures/ca.crt https://localhost:2443
+// $ curl -i --cacert ../../fixtures/ca.crt https://localhost:2443
 // $ curl -i http://localhost:2280

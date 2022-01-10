@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	crtPath = "./fixtures/server.crt"
-	keyPath = "./fixtures/server.key"
+	crtPath = "../fixtures/server.crt"
+	keyPath = "../fixtures/server.key"
 )
 
 func main() {
