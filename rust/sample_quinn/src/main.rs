@@ -1,5 +1,3 @@
-// #![cfg(feature = "rustls")]
-
 use std::{error::Error, net::SocketAddr, sync::Arc};
 
 use futures_util::StreamExt;
@@ -88,11 +86,9 @@ fn make_server_endpoint(bind_addr: SocketAddr) -> Result<(Incoming, Vec<u8>), Bo
 }
 
 fn configure_server() -> Result<(ServerConfig, Vec<u8>), Box<dyn Error>> {
-    let cert = rcgen::generate_simple_self_signed(vec!["localhost".into()]).unwrap();
-    let cert_der = cert.serialize_der().unwrap();
-    let priv_key = cert.serialize_private_key_der();
-    let priv_key = rustls::PrivateKey(priv_key);
-    let cert_chain = vec![rustls::Certificate(cert_der.clone())];
+    let (cert, priv_key) = generate_self_signed_cert()?;
+    let cert_der = cert.as_ref().to_vec();
+    let cert_chain = vec![cert];
 
     let mut server_config = ServerConfig::with_single_cert(cert_chain, priv_key)?;
     Arc::get_mut(&mut server_config.transport)
@@ -100,4 +96,11 @@ fn configure_server() -> Result<(ServerConfig, Vec<u8>), Box<dyn Error>> {
         .max_concurrent_uni_streams(0_u8.into());
 
     Ok((server_config, cert_der))
+}
+
+fn generate_self_signed_cert() -> Result<(rustls::Certificate, rustls::PrivateKey), Box<dyn Error>>
+{
+    let cert = rcgen::generate_simple_self_signed(vec!["localhost".to_string()]).unwrap();
+    let key = rustls::PrivateKey(cert.serialize_private_key_der());
+    Ok((rustls::Certificate(cert.serialize_der().unwrap()), key))
 }
