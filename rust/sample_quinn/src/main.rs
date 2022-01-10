@@ -28,15 +28,12 @@ async fn run_server(addr: SocketAddr) {
 
 async fn run_client(server_addr: SocketAddr) -> Result<(), Box<dyn Error>> {
     let client_cfg = configure_client();
-    let mut endpoint = Endpoint::client("127.0.0.1:0".parse().unwrap())?;
+    let mut endpoint = Endpoint::client("127.0.0.1:0".parse()?)?;
     endpoint.set_default_client_config(client_cfg);
 
     // connect to server
-    let quinn::NewConnection { connection, .. } = endpoint
-        .connect(server_addr, "localhost")
-        .unwrap()
-        .await
-        .unwrap();
+    let quinn::NewConnection { connection, .. } =
+        endpoint.connect(server_addr, "localhost")?.await?;
     println!("[client] connected: addr={}", connection.remote_address());
     // Dropping handles allows the corresponding objects to automatically shut down
     drop(connection);
@@ -100,7 +97,7 @@ fn configure_server() -> Result<(ServerConfig, Vec<u8>), Box<dyn Error>> {
 
 fn generate_self_signed_cert() -> Result<(rustls::Certificate, rustls::PrivateKey), Box<dyn Error>>
 {
-    let cert = rcgen::generate_simple_self_signed(vec!["localhost".to_string()]).unwrap();
+    let cert = rcgen::generate_simple_self_signed(vec!["localhost".to_string()])?;
     let key = rustls::PrivateKey(cert.serialize_private_key_der());
-    Ok((rustls::Certificate(cert.serialize_der().unwrap()), key))
+    Ok((rustls::Certificate(cert.serialize_der()?), key))
 }
