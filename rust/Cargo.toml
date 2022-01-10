@@ -7,4 +7,5 @@ members = [
     "async-await-echo",
     "hyper_server",
     "matrix_image_converter.rs",
+    "sample_quinn",
 ]
