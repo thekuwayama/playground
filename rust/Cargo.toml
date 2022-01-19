@@ -9,4 +9,5 @@ members = [
     "matrix_image_converter.rs",
     "sample_quinn_client_server",
     "sample_rustls_cert",
+    "defer",
 ]
