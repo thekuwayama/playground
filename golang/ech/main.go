@@ -13,9 +13,7 @@ import (
 	"net"
 	"os"
 
-	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/cryptobyte"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -23,28 +21,11 @@ const (
 	keyPath = "../../fixtures/server.key"
 )
 
-var sortedSupportedAEADs []uint16
-
-func init() {
-	var SupportedAEADs = map[uint16]struct {
-		keySize   int
-		nonceSize int
-		aead      func([]byte) (cipher.AEAD, error)
-	}{
-		// RFC 9180, Section 7.3
-		// AEAD_AES_128_GCM:      {keySize: 16, nonceSize: 12, aead: aesGCMNew},
-		0x0001: {keySize: 16, nonceSize: 12, aead: aesGCMNew},
-		// AEAD_AES_256_GCM:      {keySize: 32, nonceSize: 12, aead: aesGCMNew},
-		0x0002: {keySize: 32, nonceSize: 12, aead: aesGCMNew},
-		// AEAD_ChaCha20Poly1305: {keySize: chacha20poly1305.KeySize, nonceSize: chacha20poly1305.NonceSize, aead: chacha20poly1305.New},
-		0x0003: {keySize: chacha20poly1305.KeySize, nonceSize: chacha20poly1305.NonceSize, aead: chacha20poly1305.New},
-	}
-
-	// for aeadID := range hpke.SupportedAEADs {
-	for aeadID := range SupportedAEADs {
-		sortedSupportedAEADs = append(sortedSupportedAEADs, aeadID)
-	}
-	slices.Sort(sortedSupportedAEADs)
+var SupportedAEADs = []uint16{
+	// RFC 9180, Section 7.3
+	0x0001, // AEAD_AES_128_GCM
+	0x0002, // AEAD_AES_256_GCM
+	0x0003, // AEAD_ChaCha20Poly1305
 }
 
 var aesGCMNew = func(key []byte) (cipher.AEAD, error) {
@@ -62,15 +43,13 @@ func marshalECHConfig(id uint8, pubKey []byte, publicName string, maxNameLen uin
 	builder.AddUint16(extensionEncryptedClientHello)
 	builder.AddUint16LengthPrefixed(func(builder *cryptobyte.Builder) {
 		builder.AddUint8(id)
-		// builder.AddUint16(hpke.DHKEM_X25519_HKDF_SHA256) // The only DHKEM we support
-		builder.AddUint16(0x0020)
+		builder.AddUint16(0x0020) // DHKEM_X25519_HKDF_SHA256 // The only DHKEM we support
 		builder.AddUint16LengthPrefixed(func(builder *cryptobyte.Builder) {
 			builder.AddBytes(pubKey)
 		})
 		builder.AddUint16LengthPrefixed(func(builder *cryptobyte.Builder) {
-			for _, aeadID := range sortedSupportedAEADs {
-				// builder.AddUint16(hpke.KDF_HKDF_SHA256) // The only KDF we support
-				builder.AddUint16(0x0001) // The only KDF we support
+			for _, aeadID := range SupportedAEADs {
+				builder.AddUint16(0x0001) // KDF_HKDF_SHA256 // The only KDF we support
 				builder.AddUint16(aeadID)
 			}
 		})
@@ -95,10 +74,28 @@ func marshalECHConfigs(echConfig []byte) []byte {
 	return builder.BytesOrPanic()
 }
 
+func tmpECHConfigPEM(echConfigs []byte) (string, error) {
+	tmpFile, err := os.CreateTemp("/tmp", "echconfigs.pem")
+	if err != nil {
+		return "", err
+	}
+	defer tmpFile.Close()
+
+	if _, err := tmpFile.WriteString(fmt.Sprintf("-----BEGIN ECHCONFIG-----\n%s\n-----END ECHCONFIG-----", base64.StdEncoding.EncodeToString(echConfigs))); err != nil {
+		return "", err
+	}
+
+	return tmpFile.Name(), nil
+}
+
 func main() {
 	log.SetFlags(log.Lshortfile)
 
 	ck, err := tls.LoadX509KeyPair(crtPath, keyPath)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	echKey, err := ecdh.X25519().GenerateKey(rand.Reader)
 	if err != nil {
@@ -108,25 +105,20 @@ func main() {
 
 	echConfig := marshalECHConfig(123, echKey.PublicKey().Bytes(), "localhost", 32)
 	echConfigs := marshalECHConfigs(echConfig)
-
-	tmpFile, err := os.CreateTemp("/tmp", "echconfigs.pem")
+	fname, err := tmpECHConfigPEM(echConfigs)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	defer tmpFile.Close()
-
-	if _, err := tmpFile.WriteString(fmt.Sprintf("-----BEGIN ECHCONFIG-----\n%s\n-----END ECHCONFIG-----", base64.StdEncoding.EncodeToString(echConfigs))); err != nil {
-		log.Println(err)
-		return
-	}
+	log.Println(fname)
 
 	config := &tls.Config{
 		Certificates: []tls.Certificate{ck},
 		EncryptedClientHelloKeys: []tls.EncryptedClientHelloKey{
 			{
-				Config:     echConfig,
-				PrivateKey: echKey.PublicKey().Bytes(),
+				Config:      echConfig,
+				PrivateKey:  echKey.Bytes(),
+				SendAsRetry: true,
 			},
 		},
 	}
