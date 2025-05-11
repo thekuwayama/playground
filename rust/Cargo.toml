@@ -10,4 +10,7 @@ members = [
     "sample_quinn_client_server",
     "sample_rustls_cert",
     "defer",
+    "dbg_fibonacci",
+    "sample_g_after_f",
+    "memoize",
 ]
