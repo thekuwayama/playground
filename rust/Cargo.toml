@@ -12,5 +12,5 @@ members = [
     "defer",
     "dbg_fibonacci",
     "sample_g_after_f",
-    "memoize",
+    "memoize", "safe_root_reciprocal",
 ]
