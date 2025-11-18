@@ -12,5 +12,7 @@ members = [
     "defer",
     "dbg_fibonacci",
     "sample_g_after_f",
-    "memoize", "safe_root_reciprocal",
+    "memoize",
+    "safe_root_reciprocal",
+    "sample_ipv6_parse_ascii"
 ]
