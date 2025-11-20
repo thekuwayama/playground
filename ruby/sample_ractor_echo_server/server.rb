@@ -27,8 +27,14 @@ Socket.tcp_server_loop(port) do |socket, addr|
   p addr
 
   writer = Writer.new
-  loop do
-    buf = socket.gets
-    writer.port << [socket, buf]
+
+  reader = Ractor.new do
+    sock, w = Ractor.receive
+    loop do
+      s = sock.gets
+      w.port << [sock, s]
+    end
   end
+
+  reader << [socket, writer]
 end
