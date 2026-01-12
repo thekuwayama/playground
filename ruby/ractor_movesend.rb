@@ -1,12 +1,14 @@
 #!/usr/bin/env ruby
 
 r = Ractor.new do
-  until (s = Ractor.recv).nil?
-    s # do nothing
+  until (msg = Ractor.recv).nil?
+    puts "in Ractor: #{msg.s.object_id}"
   end
 end
 
 class Message
+  attr_reader :s
+
   def initialize(s)
     @s = s
   end
@@ -14,22 +16,16 @@ end
 
 class MessageBuilder
   def initialize
-    @h = ['this is message', 'THIS IS MESSAGE'] # Ractor::MovedError
-    # FIXME: @h = ['this is message'.freeze, 'THIS IS MESSAGE'.freeze]
+    # @h = ['this is message', 'THIS IS MESSAGE'] # Ractor::MovedError
+    @h = ['this is message'.freeze, 'THIS IS MESSAGE'.freeze]
   end
 
   def build(x)
-    msg = if x % 3 == 2
-            'This is message'
-          else
-            @h[x % 3]
-          end
-
-    Message.new(msg)
+    Message.new(@h[x % 2])
   end
 
-  def display
-    pp @h
+  def display(prefix)
+    puts "#{prefix}: #{@h.map(&:object_id)}"
   end
 end
 
@@ -39,5 +35,9 @@ builder = MessageBuilder.new
 msg = builder.build(0)
 r.send(msg, move: true)
 
+# Ractor#send
+msg = builder.build(1)
+r.send(msg, move: true)
+
 # access @h
-builder.display
+builder.display('main Ractor')
